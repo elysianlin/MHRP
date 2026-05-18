@@ -59,10 +59,12 @@
   .datetime { font-family: var(--mono); font-size: 12px; color: var(--text3); }
  
   /* Main layout */
-  .main { flex: 1; display: flex; }
+  html, body { height: 100%;}
+
+  .main { height: calc(100vh - var(--header-h)); flex: 1; display: flex; overflow: hidden;}
  
   /* Page */
-  .page { display: none; flex: 1; flex-direction: column; overflow: hidden; overflow-y: auto; overflow-x: hidden;}
+  .page { display: none; flex: 1; flex-direction: column; overflow: hidden; }
   .page.active { display: flex; }
  
   /* Overview page */
@@ -685,6 +687,8 @@ function switchPage(id, btn) {
   btn.classList.add('active');
 }
  
+
+
 // ===== Data =====
 const priorityData = [
   { rank:1, id:'C區-07', loc:'C區 倉儲中心', health:28, status:'alarm', action:'欠相', repair:'待派工' },
