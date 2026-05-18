@@ -1,0 +1,1234 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>工業馬達管理平台</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+TC:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #ffffff;  
+    --bg2: #ffffff;
+    --bg3: #e6f4fab9;
+    --bg4: #b3b8c2;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.12);
+    --text: #0b0e17;
+    --text2: #111621;
+    --text3: #181d2b;
+    --blue: #3b82f6;
+    --blue-dim: rgba(59,130,246,0.12);
+    --green: #22c55e;
+    --green-dim: rgba(34,197,94,0.12);
+    --amber: #f59e0b;
+    --amber-dim: rgba(245,158,11,0.12);
+    --red: #ef4444;
+    --red-dim: rgba(239,68,68,0.12);
+    --gray-dim: rgba(139,146,168,0.1);
+    --font: 'IBM Plex Sans TC', sans-serif;
+    --mono: 'JetBrains Mono', monospace;
+    --radius: 8px;
+    --radius-lg: 12px;
+    --nav-w: 200px;
+    --header-h: 52px;
+  }
+   body { font-family: var(--font); background: var(--bg); color: var(--text); font-size: 14px; line-height: 1.5; height:100%; overflow: hidden; display: flex; flex-direction: column; }
+ 
+  /* Header */
+  .header { height: var(--header-h); background: var(--bg2); border-bottom: 1px solid var(--border); display: flex; align-items: center; padding: 0 20px; gap: 0; position: sticky; top: 0; z-index: 100; }
+  .logo { display: flex; align-items: center; gap: 10px; margin-right: 40px; }
+  .logo-icon { width: 32px; height: 32px; background: var(--blue); border-radius: 8px; display: flex; align-items: center; justify-content: center; }
+  .logo-icon i { font-size: 18px; color: white; }
+  .logo-name { font-size: 15px; font-weight: 600; letter-spacing: 0.02em; }
+  .nav-tabs { display: flex; gap: 2px; }
+  .nav-tab { padding: 6px 14px; border-radius: var(--radius); font-size: 13px; font-weight: 400; color: var(--text2); cursor: pointer; border: none; background: none; transition: all 0.15s; white-space: nowrap; }
+  .nav-tab:hover { color: var(--text); background: var(--bg3); }
+  .nav-tab.active { color: var(--blue); background: var(--blue-dim); font-weight: 500; }
+  .header-right { margin-left: auto; display: flex; align-items: center; gap: 12px; }
+  .status-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); display: inline-block; margin-right: 5px; }
+  .status-label { font-size: 12px; color: var(--green); font-weight: 500; }
+  .header-icon { width: 32px; height: 32px; border-radius: var(--radius); background: var(--bg3); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text2); }
+  .header-icon i { font-size: 16px; }
+  .user-badge { display: flex; align-items: center; gap: 8px; padding: 4px 10px; border-radius: var(--radius); background: var(--bg3); border: 1px solid var(--border); cursor: pointer; }
+  .user-avatar { width: 24px; height: 24px; border-radius: 50%; background: var(--blue); display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; color: white; }
+  .user-name { font-size: 12px; color: var(--text2); }
+  .datetime { font-family: var(--mono); font-size: 12px; color: var(--text3); }
+ 
+  /* Main layout */
+  .main { flex: 1; display: flex; }
+ 
+  /* Page */
+  .page { display: none; flex: 1; flex-direction: column; overflow: hidden; overflow-y: auto; overflow-x: hidden;}
+  .page.active { display: flex; }
+ 
+  /* Overview page */
+  .overview-body { display: grid; grid-template-columns: 280px 1fr; gap: 1px; background: var(--border); flex: 1; overflow: hidden; }
+  .panel { background: var(--bg2); overflow-y: auto; padding: 20px; }
+ 
+  /* Left panel - health overview */
+  .panel-title { font-size: 11px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text3); margin-bottom: 16px; }
+  .health-gauge-wrap { display: flex; flex-direction: column; align-items: center; margin: 8px 0 20px; }
+  .gauge-ring { position: relative; width: 140px; height: 140px; }
+  .gauge-ring svg { transform: rotate(-90deg); }
+  .gauge-value { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; }
+  .gauge-num { font-size: 32px; font-weight: 600; font-family: var(--mono); color: var(--text); }
+  .gauge-label { font-size: 11px; color: var(--text3); }
+  .gauge-status { margin-top: 8px; font-size: 12px; padding: 3px 10px; border-radius: 20px; background: var(--green-dim); color: var(--green); font-weight: 500; }
+ 
+  .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 16px; }
+  .stat-card { background: var(--bg3); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px; }
+  .stat-card .s-label { font-size: 11px; color: var(--text3); margin-bottom: 4px; display: flex; align-items: center; gap: 5px; }
+  .stat-card .s-label i { font-size: 13px; }
+  .stat-card .s-val { font-size: 22px; font-weight: 600; font-family: var(--mono); }
+  .stat-card .s-sub { font-size: 11px; color: var(--text3); margin-top: 2px; }
+  .s-normal { color: var(--green); }
+  .s-warn { color: var(--amber); }
+  .s-alarm { color: var(--red); }
+  .s-offline { color: var(--text3); }
+  .s-total { color: var(--blue); }
+ 
+  .divider { height: 1px; background: var(--border); margin: 16px 0; }
+ 
+  /* Right panel */
+  .right-panel { display: flex; flex-direction: column; gap: 1px; background: var(--border); }
+  .right-top { background: var(--bg2); padding: 20px; flex: 1; overflow-y: auto; }
+  .right-bottom { background: var(--bg2); padding: 20px; height: 300px; }
+ 
+  .section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+  .section-title { font-size: 13px; font-weight: 600; color: var(--text); display: flex; align-items: center; gap: 8px; }
+  .section-title i { font-size: 16px; color: var(--blue); }
+  .section-meta { font-size: 11px; color: var(--text3); }
+ 
+  /* Priority table */
+  .priority-table { width: 100%; border-collapse: collapse; }
+  .priority-table th { font-size: 11px; font-weight: 500; color: var(--text3); text-align: left; padding: 6px 10px; border-bottom: 1px solid var(--border); letter-spacing: 0.05em; white-space: nowrap; }
+  .priority-table td { padding: 8px 10px; border-bottom: 1px solid var(--border); font-size: 12px; white-space: nowrap; }
+  .priority-table tr:last-child td { border-bottom: none; }
+  .priority-table tr:hover td { background: var(--bg3); }
+  .priority-table .rank { font-family: var(--mono); font-size: 11px; color: var(--text3); width: 24px; }
+  .priority-table .eq-id { font-family: var(--mono); font-size: 12px; font-weight: 500; color: var(--blue); }
+  .health-bar-wrap { display: flex; align-items: center; gap: 8px; }
+  .health-bar { height: 4px; border-radius: 2px; background: var(--bg4); overflow: hidden; width: 60px; }
+  .health-bar-fill { height: 100%; border-radius: 2px; }
+  .health-num { font-family: var(--mono); font-size: 12px; font-weight: 500; }
+  .badge { font-size: 10px; font-weight: 600; padding: 2px 7px; border-radius: 10px; white-space: nowrap; letter-spacing: 0.03em; }
+  .badge-alarm { background: var(--red-dim); color: var(--red); }
+  .badge-warn { background: var(--amber-dim); color: var(--amber); }
+  .badge-normal { background: var(--green-dim); color: var(--green); }
+  .badge-offline { background: var(--gray-dim); color: var(--text3); }
+  .badge-pending { background: rgba(59,130,246,0.12); color: var(--blue); }
+  .badge-dispatched { background: rgba(168,85,247,0.12); color: #a855f7; }
+  .badge-done { background: var(--green-dim); color: var(--green); }
+  .action-tag { font-size: 11px; color: var(--text2); }
+ 
+  /* Area chart */
+  .chart-wrap { position: relative; width: 100%; height: 190px; }
+ 
+  /* Zone mgmt page */
+  .zone-body { display: grid; grid-template-columns: 200px 1fr; gap: 1px; background: var(--border); flex: 1; overflow: hidden; }
+  .zone-list-panel { background: var(--bg2); overflow-y: auto; padding: 16px; }
+  .zone-main { display: flex; flex-direction: column; gap: 1px; background: var(--border); overflow: hidden; }
+  .zone-top-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: var(--border); }
+  .zone-stat-panel { background: var(--bg2); padding: 20px; overflow-y: auto; }
+  .zone-event-panel { background: var(--bg2); padding: 20px; overflow-y: auto; }
+  .zone-bottom-row { display: grid; grid-template-columns: 200px 1fr 1fr; gap: 1px; background: var(--border); height: 360px; min-height: 360px; max-height: 360px; overflow: hidden; }
+  .zone-eq-panel { background: var(--bg2); padding: 16px; overflow-y: auto; }
+  .zone-chart-panel { background: var(--bg2); padding: 16px; overflow: hidden; }
+  .zone-trend-panel { background: var(--bg2); padding: 16px; overflow: hidden; }
+ 
+  /* Zone list tree */
+  .zone-group { margin-bottom: 4px; }
+  .zone-group-header { display: flex; align-items: center; gap: 6px; padding: 7px 8px; border-radius: var(--radius); cursor: pointer; font-size: 13px; font-weight: 500; color: var(--text2); transition: all 0.15s; }
+  .zone-group-header:hover { background: var(--bg3); color: var(--text); }
+  .zone-group-header.active { background: var(--blue-dim); color: var(--blue); }
+  .zone-group-header i { font-size: 14px; }
+  .zone-group-arrow { font-size: 12px; margin-left: auto; transition: transform 0.2s; }
+  .zone-group.open .zone-group-arrow { transform: rotate(180deg); }
+  .zone-children { display: none; padding-left: 16px; }
+  .zone-group.open .zone-children { display: block; }
+  .zone-child { display: flex; align-items: center; gap: 8px; padding: 5px 8px; border-radius: var(--radius); cursor: pointer; font-size: 12px; color: var(--text3); transition: all 0.15s; }
+  .zone-child:hover { background: var(--bg3); color: var(--text2); }
+  .zone-child.active { color: var(--blue); background: var(--bg3); }
+  .zone-child-dot { width: 6px; height: 6px; border-radius: 50%; }
+ 
+  /* Zone stat cards */
+  .zone-stat-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 16px; }
+  .zone-stat-card { background: var(--bg3); border: 1px solid var(--border); border-radius: var(--radius); padding: 10px 12px; }
+  .zone-stat-card .zs-label { font-size: 10px; color: var(--text3); margin-bottom: 3px; }
+  .zone-stat-card .zs-val { font-size: 20px; font-weight: 600; font-family: var(--mono); }
+ 
+  /* Event table */
+  .event-table { width: 100%; border-collapse: collapse; }
+  .event-table th { font-size: 10px; font-weight: 500; color: var(--text3); padding: 5px 8px; border-bottom: 1px solid var(--border); text-align: left; white-space: nowrap; }
+  .event-table td { padding: 6px 8px; border-bottom: 1px solid var(--border); font-size: 11px; }
+  .event-table tr:hover td { background: var(--bg3); }
+  .event-table tr:last-child td { border-bottom: none; }
+  .eq-id-sm { font-family: var(--mono); font-size: 11px; color: var(--blue); }
+ 
+  /* Equipment list (zone) */
+  .eq-list-item { display: flex; align-items: center; gap: 8px; padding: 7px 8px; border-radius: var(--radius); cursor: pointer; border: 1px solid transparent; transition: all 0.15s; margin-bottom: 2px; }
+  .eq-list-item:hover { background: var(--bg3); }
+  .eq-list-item.active { background: var(--bg3); border-color: var(--border2); }
+  .eq-list-item .eq-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+  .eq-list-item .eq-name { font-size: 12px; color: var(--text2); flex: 1; }
+  .eq-list-item .eq-health { font-family: var(--mono); font-size: 11px; color: var(--text3); }
+ 
+  /* Three-phase chart area */
+  .phase-legend { display: flex; gap: 14px; margin-bottom: 10px; font-size: 11px; }
+  .phase-legend span { display: flex; align-items: center; gap: 5px; color: var(--text2); }
+  .phase-dot { width: 8px; height: 8px; border-radius: 50%; }
+  .current-vals { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-top: 10px; }
+  .current-val-card { background: var(--bg3); border: 1px solid var(--border); border-radius: var(--radius); padding: 8px; text-align: center; }
+  .current-val-card .cv-label { font-size: 10px; color: var(--text3); margin-bottom: 2px; }
+  .current-val-card .cv-num { font-size: 16px; font-weight: 600; font-family: var(--mono); }
+ 
+  /* Placeholder pages */
+  .placeholder-page { flex: 1; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 12px; color: var(--text3); }
+  .placeholder-page i { font-size: 48px; opacity: 0.3; }
+  .placeholder-page p { font-size: 14px; }
+ 
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 4px; height: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+ 
+  /* Time display */
+  #clock { font-family: var(--mono); font-size: 12px; color: var(--text3); }
+</style>
+</head>
+<body>
+ 
+<header class="header">
+  <div class="logo">
+    <div class="logo-icon"><i class="ti ti-engine"></i></div>
+    <span class="logo-name">MotorIQ 工業馬達管理平台</span>
+  </div>
+  <nav class="nav-tabs">
+    <button class="nav-tab active" onclick="switchPage('overview', this)"><i class="ti ti-layout-dashboard" style="margin-right:4px;font-size:14px;vertical-align:-2px"></i>總覽</button>
+    <button class="nav-tab" onclick="switchPage('zone', this)"><i class="ti ti-map-2" style="margin-right:4px;font-size:14px;vertical-align:-2px"></i>區域管理</button>
+    <button class="nav-tab" onclick="switchPage('risk', this)"><i class="ti ti-shield-exclamation" style="margin-right:4px;font-size:14px;vertical-align:-2px"></i>風險管理</button>
+    <button class="nav-tab" onclick="switchPage('alarm', this)"><i class="ti ti-bell-ringing" style="margin-right:4px;font-size:14px;vertical-align:-2px"></i>告警中心</button>
+    <button class="nav-tab" onclick="switchPage('repair', this)"><i class="ti ti-tool" style="margin-right:4px;font-size:14px;vertical-align:-2px"></i>維修申報</button>
+    <button class="nav-tab" onclick="switchPage('report', this)"><i class="ti ti-report-analytics" style="margin-right:4px;font-size:14px;vertical-align:-2px"></i>報表中心</button>
+    <button class="nav-tab" onclick="switchPage('settings', this)"><i class="ti ti-settings" style="margin-right:4px;font-size:14px;vertical-align:-2px"></i>系統設定</button>
+  </nav>
+  <div class="header-right">
+    <div><span class="status-dot"></span><span class="status-label">系統正常</span></div>
+    <span class="datetime" id="clock">--:--:--</span>
+    <div class="header-icon"><i class="ti ti-bell" aria-hidden="true"></i></div>
+    <div class="user-badge">
+      <div class="user-avatar">管</div>
+      <span class="user-name">管理員</span>
+      <i class="ti ti-chevron-down" style="font-size:12px;color:var(--text3)" aria-hidden="true"></i>
+    </div>
+  </div>
+</header>
+ 
+<main class="main">
+ 
+<!-- ===== 總覽 PAGE ===== -->
+<div class="page active" id="page-overview">
+  <div class="overview-body">
+ 
+    <!-- Left: health summary -->
+    <div class="panel">
+      <div class="panel-title">馬達健康度總覽</div>
+ 
+      <div class="health-gauge-wrap">
+        <div class="gauge-ring">
+          <svg width="140" height="140" viewBox="0 0 140 140">
+            <circle cx="70" cy="70" r="58" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="10"/>
+            <circle cx="70" cy="70" r="58" fill="none" stroke="#3b82f6" stroke-width="10"
+              stroke-dasharray="364.4" stroke-dashoffset="72.9" stroke-linecap="round"/>
+          </svg>
+          <div class="gauge-value">
+            <div class="gauge-num">80</div>
+            <div class="gauge-label">平均健康度</div>
+          </div>
+        </div>
+        <div class="gauge-status"><i class="ti ti-trending-up" style="font-size:12px;vertical-align:-1px"></i> 較昨日 +2</div>
+      </div>
+ 
+      <div class="stat-grid">
+        <div class="stat-card">
+          <div class="s-label"><i class="ti ti-cpu" aria-hidden="true"></i> 馬達總數</div>
+          <div class="s-val s-total">286</div>
+          <div class="s-sub">台設備</div>
+        </div>
+        <div class="stat-card">
+          <div class="s-label"><i class="ti ti-circle-check" aria-hidden="true"></i> 正常</div>
+          <div class="s-val s-normal">210</div>
+          <div class="s-sub">台 (73.4%)</div>
+        </div>
+        <div class="stat-card">
+          <div class="s-label"><i class="ti ti-alert-triangle" aria-hidden="true"></i> 警告</div>
+          <div class="s-val s-warn">52</div>
+          <div class="s-sub">台 (18.2%)</div>
+        </div>
+        <div class="stat-card">
+          <div class="s-label"><i class="ti ti-alert-circle" aria-hidden="true"></i> 警報</div>
+          <div class="s-val s-alarm">20</div>
+          <div class="s-sub">台 (7.0%)</div>
+        </div>
+        <div class="stat-card" style="grid-column:1/-1;">
+          <div class="s-label"><i class="ti ti-wifi-off" aria-hidden="true"></i> 離線設備</div>
+          <div class="s-val s-offline">4</div>
+          <div class="s-sub">台 (1.4%) — 需確認連線狀態</div>
+        </div>
+      </div>
+ 
+      <div class="divider"></div>
+      <div class="panel-title">通訊狀態</div>
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <div style="display:flex;align-items:center;gap:8px;font-size:12px;">
+          <span style="width:8px;height:8px;border-radius:50%;background:var(--green);display:inline-block;flex-shrink:0"></span>
+          <span style="color:var(--text2);">每 60 秒主動上報</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;font-size:12px;">
+          <span style="width:8px;height:8px;border-radius:50%;background:var(--green);display:inline-block;flex-shrink:0"></span>
+          <span style="color:var(--text2);">Modbus RTU 連線正常</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;font-size:12px;">
+          <span style="width:8px;height:8px;border-radius:50%;background:var(--green);display:inline-block;flex-shrink:0"></span>
+          <span style="color:var(--text2);">RS-485 連線正常</span>
+        </div>
+      </div>
+    </div>
+ 
+    <!-- Right -->
+    <div class="right-panel">
+ 
+      <!-- Priority list -->
+      <div class="right-top">
+        <div class="section-header">
+          <div class="section-title"><i class="ti ti-list-numbers" aria-hidden="true"></i>優先管理設備列表</div>
+          <div class="section-meta">即時更新</div>
+        </div>
+        <div style="overflow-x:auto;">
+          <table class="priority-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>設備編號</th>
+                <th>位置</th>
+                <th>健康度</th>
+                <th>狀態</th>
+                <th>可能異常判讀</th>
+                <th>維修狀態</th>
+              </tr>
+            </thead>
+            <tbody id="priority-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+ 
+      <!-- Area chart -->
+      <div class="right-bottom">
+        <div class="section-header">
+          <div class="section-title"><i class="ti ti-chart-bar" aria-hidden="true"></i>區域設備狀態概況</div>
+        </div>
+        <div class="chart-wrap">
+          <canvas id="areaChart" role="img" aria-label="各區域設備狀態分佈長條圖，展示正常、警告、警報、離線數量">各區域設備健康狀態分佈</canvas>
+        </div>
+      </div>
+    </div>
+ 
+  </div>
+</div>
+ 
+<!-- ===== 區域管理 PAGE ===== -->
+<div class="page" id="page-zone">
+  <div class="zone-body">
+ 
+    <!-- Zone tree list -->
+    <div class="zone-list-panel">
+      <div class="panel-title">區域列表</div>
+      <div id="zone-tree"></div>
+    </div>
+ 
+    <!-- Zone main content -->
+    <div class="zone-main">
+ 
+      <!-- Top row: zone stats + event list -->
+      <div class="zone-top-row" style="height:260px;min-height:260px;max-height:260px;">
+ 
+        <div class="zone-stat-panel">
+          <div class="section-header" style="margin-bottom:10px;">
+            <div class="section-title"><i class="ti ti-map-pin" aria-hidden="true"></i><span id="zone-stat-name">B區 生產車間</span> 區域概況</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
+            <div style="position:relative;width:76px;height:76px;flex-shrink:0;">
+              <svg width="76" height="76" viewBox="0 0 80 80" style="transform:rotate(-90deg)">
+                <circle cx="40" cy="40" r="32" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="7"/>
+                <circle cx="40" cy="40" r="32" fill="none" stroke="#3b82f6" stroke-width="7"
+                  stroke-dasharray="201" stroke-dashoffset="50" stroke-linecap="round" id="zone-gauge-arc"/>
+              </svg>
+              <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;">
+                <div style="font-size:17px;font-weight:600;font-family:var(--mono);" id="zone-avg-health">75</div>
+                <div style="font-size:9px;color:var(--text3);">健康度</div>
+              </div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;flex:1;">
+              <div class="zone-stat-card">
+                <div class="zs-label">馬達總數</div>
+                <div class="zs-val s-total" id="z-total">64</div>
+              </div>
+              <div class="zone-stat-card">
+                <div class="zs-label">離線</div>
+                <div class="zs-val s-offline" id="z-offline">2</div>
+              </div>
+              <div class="zone-stat-card">
+                <div class="zs-label">今日事件</div>
+                <div class="zs-val s-total" id="z-events">8</div>
+              </div>
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;">
+            <div class="zone-stat-card" style="padding:8px 10px;">
+              <div class="zs-label" style="margin-bottom:6px;">正常</div>
+              <div style="display:flex;align-items:center;">
+                <span style="width:26px;height:26px;border-radius:50%;background:#22c55e;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;">
+                  <i class="ti ti-check" style="font-size:15px;color:#fff;" aria-hidden="true"></i>
+                </span>
+                <div class="zs-val s-normal" id="z-normal" style="flex:1;text-align:center;">45</div>
+              </div>
+            </div>
+            <div class="zone-stat-card" style="padding:8px 10px;">
+              <div class="zs-label" style="margin-bottom:6px;">警告</div>
+              <div style="display:flex;align-items:center;">
+                <span style="width:26px;height:26px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;">
+                  <i class="ti ti-alert-triangle-filled" style="font-size:26px;color:#f59e0b;" aria-hidden="true"></i>
+                </span>
+                <div class="zs-val s-warn" id="z-warn" style="flex:1;text-align:center;">12</div>
+              </div>
+            </div>
+            <div class="zone-stat-card" style="padding:8px 10px;">
+              <div class="zs-label" style="margin-bottom:6px;">警報</div>
+              <div style="display:flex;align-items:center;">
+                <span style="width:26px;height:26px;border-radius:50%;background:#ef4444;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;">
+                  <i class="ti ti-exclamation-mark" style="font-size:15px;color:#fff;font-weight:700;" aria-hidden="true"></i>
+                </span>
+                <div class="zs-val s-alarm" id="z-alarm" style="flex:1;text-align:center;">5</div>
+              </div>
+            </div>
+          </div>
+        </div>
+ 
+        <div class="zone-event-panel">
+          <div class="section-header" style="margin-bottom:8px;">
+            <div class="section-title"><i class="ti ti-clock-exclamation" aria-hidden="true"></i>事件上報列表</div>
+            <div class="section-meta">按時間排序</div>
+          </div>
+          <div style="overflow-x:auto;max-height:180px;overflow-y:auto;">
+            <table class="event-table">
+              <thead>
+                <tr>
+                  <th>設備編號</th>
+                  <th>上報時間</th>
+                  <th>健康度</th>
+                  <th>異常事件</th>
+                  <th>維修狀態</th>
+                </tr>
+              </thead>
+              <tbody id="event-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+ 
+      </div>
+ 
+      <!-- Bottom row: eq list + 3-phase chart + health trend -->
+      <div class="zone-bottom-row">
+ 
+        <div class="zone-eq-panel">
+          <div class="panel-title" style="margin-bottom:10px;">設備列表</div>
+          <div id="eq-list"></div>
+        </div>
+ 
+        <div class="zone-chart-panel">
+          <div class="section-header" style="margin-bottom:6px;">
+            <div class="section-title"><i class="ti ti-wave-sine" aria-hidden="true"></i>三相電流即時曲線</div>
+          </div>
+          <div class="phase-legend">
+            <span><span class="phase-dot" style="background:#ef4444"></span>R 相</span>
+            <span><span class="phase-dot" style="background:#f59e0b"></span>S 相</span>
+            <span><span class="phase-dot" style="background:#3b82f6"></span>T 相</span>
+          </div>
+          <div id="selected-eq-name" style="font-size:12px;color:var(--text3);margin-bottom:6px;">選擇左側設備查看曲線</div>
+          <div style="position:relative;width:100%;height:180px;">
+            <canvas id="phaseChart" role="img" aria-label="三相電流R、S、T相即時趨勢折線圖">三相電流趨勢數據</canvas>
+          </div>
+          <div class="current-vals">
+            <div class="current-val-card">
+              <div class="cv-label">R 相 (A)</div>
+              <div class="cv-num" id="r-val" style="color:#ef4444">—</div>
+            </div>
+            <div class="current-val-card">
+              <div class="cv-label">S 相 (A)</div>
+              <div class="cv-num" id="s-val" style="color:#f59e0b">—</div>
+            </div>
+            <div class="current-val-card">
+              <div class="cv-label">T 相 (A)</div>
+              <div class="cv-num" id="t-val" style="color:#3b82f6">—</div>
+            </div>
+          </div>
+        </div>
+ 
+        <div class="zone-trend-panel">
+          <div class="section-header" style="margin-bottom:6px;">
+            <div class="section-title"><i class="ti ti-heart-rate-monitor" aria-hidden="true"></i>健康度趨勢（近7天）</div>
+          </div>
+          <div id="selected-trend-name" style="font-size:12px;color:var(--text3);margin-bottom:6px;">選擇設備後顯示</div>
+          <div style="position:relative;width:100%;height:240px;">
+            <canvas id="trendChart" role="img" aria-label="馬達健康度近七天趨勢折線圖">健康度趨勢數據</canvas>
+          </div>
+        </div>
+ 
+      </div>
+    </div>
+  </div>
+</div>
+<!-- ===== 風險管理 PAGE ===== -->
+<div class="page" id="page-risk">
+  <div class="zone-body">
+
+    <!-- Left tree -->
+    <div class="zone-list-panel">
+      <div class="panel-title">風險分類</div>
+      <div id="risk-tree"></div>
+    </div>
+
+    <!-- Main -->
+    <div class="zone-main">
+
+      <!-- top -->
+      <div class="zone-top-row" style="height:260px;min-height:260px;max-height:260px;">
+
+        <!-- risk overview -->
+        <div class="zone-stat-panel">
+          <div class="section-header">
+            <div class="section-title">
+              <i class="ti ti-shield-exclamation"></i>
+              <span id="risk-name">欠相</span> 風險概況
+            </div>
+          </div>
+
+          <div class="zone-stat-row">
+            <div class="zone-stat-card">
+              <div class="zs-label">異常設備數</div>
+              <div class="zs-val s-alarm" id="risk-count">12</div>
+            </div>
+
+            <div class="zone-stat-card">
+              <div class="zs-label">高風險</div>
+              <div class="zs-val s-alarm" id="risk-high">5</div>
+            </div>
+
+            <div class="zone-stat-card">
+              <div class="zs-label">今日事件</div>
+              <div class="zs-val s-total" id="risk-events">18</div>
+            </div>
+          </div>
+
+          <div style="margin-top:16px;">
+            <div style="font-size:13px;font-weight:600;margin-bottom:8px;">
+              AI 風險判讀
+            </div>
+
+            <div style="
+              background:var(--bg3);
+              border-radius:12px;
+              padding:14px;
+              line-height:1.8;
+              color:var(--text2);
+              font-size:13px;
+            " id="risk-analysis">
+              偵測到多台設備存在相電流失衡現象，
+              建議優先檢查電源接線與接觸器老化問題。
+            </div>
+          </div>
+        </div>
+
+        <!-- event list -->
+        <div class="zone-event-panel">
+          <div class="section-header">
+            <div class="section-title">
+              <i class="ti ti-alert-circle"></i>
+              風險事件列表
+            </div>
+          </div>
+
+          <table class="event-table">
+            <thead>
+              <tr>
+                <th>設備編號</th>
+                <th>時間</th>
+                <th>健康度</th>
+                <th>異常事件</th>
+              </tr>
+            </thead>
+
+            <tbody id="risk-event-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- bottom -->
+      <div class="zone-bottom-row">
+
+        <!-- equipment list -->
+        <div class="zone-eq-panel">
+          <div class="panel-title">風險設備列表</div>
+          <div id="risk-eq-list"></div>
+        </div>
+
+        <!-- chart -->
+        <div class="zone-chart-panel">
+          <div class="section-header">
+            <div class="section-title">
+              <i class="ti ti-chart-line"></i>
+              風險發生趨勢
+            </div>
+          </div>
+
+          <div style="height:260px;">
+            <canvas id="riskChart"></canvas>
+          </div>
+        </div>
+
+        <!-- prediction -->
+        <div class="zone-trend-panel">
+          <div class="section-header">
+            <div class="section-title">
+              <i class="ti ti-brain"></i>
+              AI 預測建議
+            </div>
+          </div>
+
+          <div style="
+            background:var(--bg3);
+            border-radius:12px;
+            padding:16px;
+            line-height:1.9;
+            font-size:13px;
+          ">
+            <b>預測結果：</b><br>
+            若未處理，目前異常設備有
+            <span style="color:var(--red);font-weight:600">
+              32%
+            </span>
+            機率在 7 日內停機。
+            <br><br>
+
+            <b>建議：</b><br>
+            • 優先更換接觸器<br>
+            • 檢查三相供電<br>
+            • 安排預防性維護
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Placeholder pages -->
+<div class="page" id="page-alarm">
+  <div class="placeholder-page">
+    <i class="ti ti-bell-ringing" aria-hidden="true"></i>
+    <p style="font-size:18px;font-weight:500;">告警中心</p>
+    <p>此功能頁面建置中</p>
+  </div>
+</div>
+<div class="page" id="page-repair">
+  <div class="placeholder-page">
+    <i class="ti ti-tool" aria-hidden="true"></i>
+    <p style="font-size:18px;font-weight:500;">維修申報</p>
+    <p>此功能頁面建置中</p>
+  </div>
+</div>
+<div class="page" id="page-report">
+  <div class="placeholder-page">
+    <i class="ti ti-report-analytics" aria-hidden="true"></i>
+    <p style="font-size:18px;font-weight:500;">報表中心</p>
+    <p>此功能頁面建置中</p>
+  </div>
+</div>
+<div class="page" id="page-settings">
+  <div class="placeholder-page">
+    <i class="ti ti-settings" aria-hidden="true"></i>
+    <p style="font-size:18px;font-weight:500;">系統設定</p>
+    <p>此功能頁面建置中</p>
+  </div>
+</div>
+ 
+</main>
+ 
+<script>
+// Clock
+function updateClock() {
+  const now = new Date();
+  document.getElementById('clock').textContent = now.toLocaleTimeString('zh-TW', {hour12:false});
+}
+updateClock();
+setInterval(updateClock, 1000);
+ 
+// Page switch
+function switchPage(id, btn) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('page-' + id).classList.add('active');
+  btn.classList.add('active');
+}
+ 
+// ===== Data =====
+const priorityData = [
+  { rank:1, id:'C區-07', loc:'C區 倉儲中心', health:28, status:'alarm', action:'欠相', repair:'待派工' },
+  { rank:2, id:'D區-03', loc:'D區 公用設施', health:33, status:'alarm', action:'軸承更換', repair:'已派工' },
+  { rank:3, id:'A區-12', loc:'A區 生產大樓', health:38, status:'alarm', action:'三相電流異常', repair:'處理中' },
+  { rank:4, id:'B區-19', loc:'B區 生產車間', health:41, status:'alarm', action:'絕緣阻抗異常', repair:'待派工' },
+  { rank:5, id:'E區-04', loc:'E區 辦公大樓', health:47, status:'warn', action:'振動偏高，觀察', repair:'待分析' },
+  { rank:6, id:'C區-11', loc:'C區 倉儲中心', health:52, status:'warn', action:'溫升偏高', repair:'已結案' },
+  { rank:7, id:'A區-06', loc:'A區 生產大樓', health:55, status:'warn', action:'電流不平衡', repair:'待派工' },
+  { rank:8, id:'B區-24', loc:'B區 生產車間', health:58, status:'warn', action:'啟動電流偏高', repair:'待分析' },
+  { rank:9, id:'D區-08', loc:'D區 公用設施', health:61, status:'warn', action:'潤滑油待更換', repair:'已派工' },
+  { rank:10, id:'E區-15', loc:'E區 辦公大樓', health:64, status:'warn', action:'基座螺絲鬆動', repair:'處理中' },
+];
+ 
+function healthColor(h) {
+  if (h >= 70) return '#22c55e'; // 綠燈：正常健康狀態 (70~100)
+  if (h >= 40) return '#f59e0b'; // 黃燈：損壞初期階段 (40~69)
+  return '#ef4444'; // 紅燈：嚴重損壞階段 (0~39)
+}
+ 
+// Priority table
+const tbody = document.getElementById('priority-tbody');
+priorityData.forEach(d => {
+  const tr = document.createElement('tr');
+  const statusBadge = d.status === 'alarm' ? '<span class="badge badge-alarm">警報</span>' : '<span class="badge badge-warn">警告</span>';
+  const repairBadge = {
+    '待派工': '<span class="badge badge-pending">待派工</span>',
+    '已派工': '<span class="badge badge-dispatched">已派工</span>',
+    '處理中': '<span class="badge badge-warn">處理中</span>',
+    '待分析': '<span class="badge badge-offline">待分析</span>',
+    '已結案': '<span class="badge badge-done">已結案</span>',
+  }[d.repair] || d.repair;
+  tr.innerHTML = `
+    <td class="rank">${d.rank}</td>
+    <td class="eq-id">${d.id}</td>
+    <td style="color:var(--text2)">${d.loc}</td>
+    <td>
+      <div class="health-bar-wrap">
+        <div class="health-bar"><div class="health-bar-fill" style="width:${d.health}%;background:${healthColor(d.health)}"></div></div>
+        <span class="health-num" style="color:${healthColor(d.health)}">${d.health}</span>
+      </div>
+    </td>
+    <td>${statusBadge}</td>
+    <td class="action-tag">${d.action}</td>
+    <td>${repairBadge}</td>
+  `;
+  tbody.appendChild(tr);
+});
+ 
+// Area bar chart
+const areaLabels = ['A區', 'B區', 'C區', 'D區', 'E區'];
+const areaChartCtx = document.getElementById('areaChart').getContext('2d');
+new Chart(areaChartCtx, {
+  type: 'bar',
+  data: {
+    labels: areaLabels,
+    datasets: [
+      { label: '正常', data: [62, 45, 38, 30, 35], backgroundColor: 'rgba(34,197,94,0.7)', borderRadius: 3 },
+      { label: '警告', data: [10, 12, 8, 7, 15], backgroundColor: 'rgba(245,158,11,0.7)', borderRadius: 3 },
+      { label: '警報', data: [3, 5, 7, 4, 1], backgroundColor: 'rgba(239,68,68,0.7)', borderRadius: 3 },
+      { label: '離線', data: [1, 2, 0, 1, 0], backgroundColor: 'rgba(139,146,168,0.4)', borderRadius: 3 },
+    ]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { display: true, labels: { color: '#8b92a8', font: { size: 11 }, boxWidth: 10, boxHeight: 10, padding: 12 } } },
+    scales: {
+      x: { stacked: true, ticks: { color: '#8b92a8', font: { size: 11 } }, grid: { color: 'rgba(255,255,255,0.04)' } },
+      y: { stacked: true, ticks: { color: '#8b92a8', font: { size: 11 } }, grid: { color: 'rgba(255,255,255,0.04)' }, border: { dash: [3,3] } }
+    }
+  }
+});
+ 
+// ===== Zone Management =====
+const zones = {
+  A: { name:'A區 生產大樓', health:88, total:76, normal:62, warn:10, alarm:3, offline:1, events:4,
+    eqs: [
+      { id:'A區-01', health:92, status:'normal', r:14.2, s:14.5, t:14.1 },
+      { id:'A區-02', health:85, status:'normal', r:20.1, s:20.3, t:20.0 },
+      { id:'A區-03', health:78, status:'normal', r:18.5, s:22.1, t:18.2 },
+      { id:'A區-06', health:55, status:'warn',   r:28.0, s:15.2, t:27.8 },
+      { id:'A區-12', health:38, status:'alarm',  r:45.0, s:18.0, t:43.0 },
+    ]
+  },
+  B: { name:'B區 生產車間', health:75, total:64, normal:45, warn:12, alarm:5, offline:2, events:8,
+    eqs: [
+      { id:'B區-01', health:87, status:'normal', r:14.4, s:14.6, t:14.2 },
+      { id:'B區-03', health:80, status:'normal', r:16.0, s:16.2, t:15.9 },
+      { id:'B區-11', health:70, status:'normal',   r:22.0, s:21.8, t:22.5 },
+      { id:'B區-19', health:41, status:'alarm',  r:38.5, s:14.0, t:37.0 },
+      { id:'B區-24', health:58, status:'warn',   r:32.0, s:32.5, t:31.8 },
+    ]
+  },
+  C: { name:'C區 倉儲中心', health:63, total:53, normal:38, warn:8, alarm:7, offline:0, events:11,
+    eqs: [
+      { id:'C區-02', health:91, status:'normal', r:12.1, s:12.3, t:12.0 },
+      { id:'C區-07', health:28, status:'alarm',  r:55.0, s:20.0, t:52.0 },
+      { id:'C區-09', health:74, status:'nromal',   r:19.0, s:19.2, t:18.8 },
+      { id:'C區-11', health:52, status:'warn',   r:25.0, s:24.8, t:25.5 },
+    ]
+  },
+  D: { name:'D區 公用設施', health:58, total:48, normal:30, warn:7, alarm:4, offline:1, events:7,
+    eqs: [
+      { id:'D區-03', health:33, status:'alarm',  r:42.0, s:16.0, t:40.0 },
+      { id:'D區-05', health:80, status:'normal', r:30.0, s:30.2, t:29.8 },
+      { id:'D區-08', health:61, status:'warn',   r:22.5, s:22.0, t:23.0 },
+    ]
+  },
+  E: { name:'E區 辦公大樓', health:82, total:45, normal:35, warn:15, alarm:1, offline:0, events:3,
+    eqs: [
+      { id:'E區-01', health:95, status:'normal', r:10.0, s:10.2, t:10.1 },
+      { id:'E區-04', health:47, status:'warn',   r:28.0, s:27.5, t:29.0 },
+      { id:'E區-15', health:64, status:'warn',   r:18.0, s:17.8, t:18.5 },
+    ]
+  },
+};
+ 
+const subZones = { A:['A區-01','A區-02','A區-03','A區-06','A區-12'], B:['B區-01','B區-03','B區-11','B區-19','B區-24'], C:['C區-02','C區-07','C區-09','C區-11'], D:['D區-03','D區-05','D區-08'], E:['E區-01','E區-04','E區-15'] };
+ 
+const eventData = {
+  A: [
+    { id:'A區-12', time:'10:18:33', health:38, event:'三相電流嚴重不平衡', repair:'alarm' },
+    { id:'A區-06', time:'09:45:12', health:55, event:'電流諧波超標', repair:'warn' },
+    { id:'A區-03', time:'08:22:05', health:78, event:'振動值偏高', repair:'normal' },
+  ],
+  B: [
+    { id:'B區-19', time:'10:24:01', health:41, event:'絕緣阻抗劣化', repair:'waen' },
+    { id:'B區-24', time:'10:11:47', health:58, event:'啟動電流異常', repair:'warn' },
+    { id:'B區-11', time:'09:55:30', health:70, event:'溫升偏高 +12°C', repair:'normal' },
+    { id:'B區-03', time:'08:10:00', health:80, event:'例行巡檢紀錄', repair:'normal' },
+  ],
+  C: [
+    { id:'C區-07', time:'10:22:15', health:28, event:'運轉電流超額定值150%', repair:'alarm' },
+    { id:'C區-11', time:'10:05:40', health:52, event:'軸承振動異常', repair:'warn' },
+    { id:'C區-09', time:'09:30:22', health:74, event:'功率因數下降', repair:'normal' },
+  ],
+  D: [
+    { id:'D區-03', time:'10:19:08', health:33, event:'繞組溫度過高', repair:'alarm' },
+    { id:'D區-08', time:'09:42:16', health:61, event:'潤滑油更換逾期', repair:'warn' },
+  ],
+  E: [
+    { id:'E區-04', time:'09:58:33', health:47, event:'基座螺絲鬆動', repair:'warn' },
+    { id:'E區-15', time:'08:45:00', health:64, event:'V相電壓偏低', repair:'warn' },
+  ]
+};
+ 
+// Build zone tree
+const tree = document.getElementById('zone-tree');
+Object.keys(zones).forEach(zk => {
+  const z = zones[zk];
+  const grp = document.createElement('div');
+  grp.className = 'zone-group' + (zk === 'B' ? ' open' : '');
+  grp.innerHTML = `
+    <div class="zone-group-header${zk === 'B' ? ' active' : ''}" onclick="toggleZone(this,'${zk}')">
+      <i class="ti ti-building-factory" aria-hidden="true"></i>
+      ${zk}區
+      <i class="ti ti-chevron-down zone-group-arrow" aria-hidden="true"></i>
+    </div>
+    <div class="zone-children">
+        ${subZones[zk].map(id => {
+            const eq = zones[zk].eqs.find(e => e.id === id);
+            return `
+                <div class="zone-child" onclick="selectEqFromTree('${zk}','${id}',this)">
+                <span class="zone-child-dot"
+                    style="background:${getStatusColor(getHealthStatus(eq?.health || 100))}">
+                </span>
+                ${id}
+                </div>
+            `;
+            }).join('')}
+    </div>
+            `;
+  tree.appendChild(grp);
+});
+ 
+function getHealthStatus(h) {
+  if (h >= 70) return 'normal';
+  if (h >= 40) return 'warn';
+  return 'alarm';
+}
+
+function getStatusColor(s) {
+  return { alarm:'#ef4444', warn:'#f59e0b', normal:'#22c55e', offline:'#545d74' }[s] || '#545d74';
+}
+ 
+let currentZone = 'B';
+let currentEq = null;
+let phaseChart = null;
+let trendChart = null;
+ 
+function toggleZone(el, zk) {
+  const grp = el.parentElement;
+  const wasOpen = grp.classList.contains('open');
+  document.querySelectorAll('.zone-group').forEach(g => g.classList.remove('open'));
+  document.querySelectorAll('.zone-group-header').forEach(h => h.classList.remove('active'));
+  if (!wasOpen) {
+    grp.classList.add('open');
+    el.classList.add('active');
+  }
+  currentZone = zk;
+  renderZoneStats(zk);
+  renderEventList(zk);
+  renderEqList(zk);
+  clearCharts();
+}
+ 
+function renderZoneStats(zk) {
+  const z = zones[zk];
+  document.getElementById('zone-stat-name').textContent = z.name;
+  document.getElementById('zone-avg-health').textContent = z.health;
+  document.getElementById('z-total').textContent = z.total;
+  document.getElementById('z-normal').textContent = z.normal;
+  document.getElementById('z-warn').textContent = z.warn;
+  document.getElementById('z-alarm').textContent = z.alarm;
+  document.getElementById('z-offline').textContent = z.offline;
+  document.getElementById('z-events').textContent = z.events;
+  const pct = z.health / 100;
+  const circ = 201;
+  const offset = circ - pct * circ;
+  document.getElementById('zone-gauge-arc').setAttribute('stroke-dashoffset', offset);
+  const c = healthColor(z.health);
+  document.getElementById('zone-gauge-arc').setAttribute('stroke', c);
+}
+ 
+function renderEventList(zk) {
+  const events = eventData[zk] || [];
+  const tbody = document.getElementById('event-tbody');
+  tbody.innerHTML = '';
+  events.forEach(ev => {
+    const tr = document.createElement('tr');
+    const repairBadge = { alarm:'<span class="badge badge-alarm">緊急</span>', warn:'<span class="badge badge-warn">待處理</span>', normal:'<span class="badge badge-normal">正常</span>' }[ev.repair];
+    tr.innerHTML = `
+      <td class="eq-id-sm">${ev.id}</td>
+      <td style="font-family:var(--mono);font-size:10px;color:var(--text3)">${ev.time}</td>
+      <td><span style="font-family:var(--mono);font-size:11px;font-weight:500;color:${healthColor(ev.health)}">${ev.health}</span></td>
+      <td style="color:var(--text2)">${ev.event}</td>
+      <td>${repairBadge}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+ 
+function renderEqList(zk) {
+  const eqs = zones[zk].eqs;
+  const list = document.getElementById('eq-list');
+  list.innerHTML = '';
+
+  eqs.forEach(eq => {
+    const div = document.createElement('div');
+    div.className = 'eq-list-item';
+    div.id = 'eq-item-' + eq.id;
+
+    div.innerHTML = `
+      <span class="eq-dot" 
+        style="background:${getStatusColor(getHealthStatus(eq.health))}">
+      </span>
+
+      <span class="eq-name">${eq.id}</span>
+
+      <span class="eq-health" 
+        style="color:${healthColor(eq.health)}">
+        ${eq.health}
+      </span>
+    `;
+
+    div.onclick = () => selectEq(zk, eq.id, div);
+    list.appendChild(div);
+  });
+}
+ 
+function selectEqFromTree(zk, eqId, el) {
+  // activate zone if not already
+  const grpHeader = el.closest('.zone-group').querySelector('.zone-group-header');
+  if (!zones[currentZone] || currentZone !== zk) {
+    document.querySelectorAll('.zone-group').forEach(g => g.classList.remove('open'));
+    document.querySelectorAll('.zone-group-header').forEach(h => h.classList.remove('active'));
+    el.closest('.zone-group').classList.add('open');
+    grpHeader.classList.add('active');
+    currentZone = zk;
+    renderZoneStats(zk);
+    renderEventList(zk);
+    renderEqList(zk);
+  }
+  document.querySelectorAll('.zone-child').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  setTimeout(() => {
+    const item = document.getElementById('eq-item-' + eqId);
+    if (item) selectEq(zk, eqId, item);
+  }, 50);
+}
+ 
+function selectEq(zk, eqId, el) {
+  document.querySelectorAll('.eq-list-item').forEach(i => i.classList.remove('active'));
+  el.classList.add('active');
+  currentEq = zones[zk].eqs.find(e => e.id === eqId);
+  if (!currentEq) return;
+  document.getElementById('selected-eq-name').textContent = eqId + ' 三相電流';
+  document.getElementById('selected-trend-name').textContent = eqId + ' 近7日健康度';
+  document.getElementById('r-val').textContent = currentEq.r.toFixed(1);
+  document.getElementById('s-val').textContent = currentEq.s.toFixed(1);
+  document.getElementById('t-val').textContent = currentEq.t.toFixed(1);
+  renderPhaseChart(currentEq);
+  renderTrendChart(currentEq);
+}
+ 
+function generatePhaseData(base, noise) {
+  return Array.from({length:30}, (_, i) => +(base + (Math.random()-0.5)*noise).toFixed(2));
+}
+ 
+function renderPhaseChart(eq) {
+  const labels = Array.from({length:30}, (_, i) => {
+    const m = 10*60 + i*2;
+    return Math.floor(m/60)+':'+String(m%60).padStart(2,'0');
+  });
+  const rData = generatePhaseData(eq.r, eq.r * 0.06);
+  const sData = generatePhaseData(eq.s, eq.s * 0.06);
+  const tData = generatePhaseData(eq.t, eq.t * 0.06);
+  rData[29] = eq.r; sData[29] = eq.s; tData[29] = eq.t;
+  if (phaseChart) phaseChart.destroy();
+  const ctx = document.getElementById('phaseChart').getContext('2d');
+  phaseChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        { label:'R相', data:rData, borderColor:'#ef4444', backgroundColor:'rgba(239,68,68,0.1)', borderWidth:1.5, pointRadius:0, tension:0.3, fill:false },
+        { label:'S相', data:sData, borderColor:'#f59e0b', backgroundColor:'rgba(245,158,11,0.1)', borderWidth:1.5, pointRadius:0, tension:0.3, fill:false },
+        { label:'T相', data:tData, borderColor:'#3b82f6', backgroundColor:'rgba(59,130,246,0.1)', borderWidth:1.5, pointRadius:0, tension:0.3, fill:false },
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display:false } },
+      scales: {
+        x: { ticks: { color:'#545d74', font:{size:9}, maxTicksLimit:6 }, grid: { color:'rgba(255,255,255,0.04)' } },
+        y: { ticks: { color:'#8b92a8', font:{size:10} }, grid: { color:'rgba(255,255,255,0.04)' }, border: { dash:[3,3] } }
+      },
+      animation: { duration: 300 }
+    }
+  });
+}
+ 
+function renderTrendChart(eq) {
+  const today = new Date();
+  const labels = Array.from({length:7}, (_, i) => {
+    const d = new Date(today);
+    d.setDate(d.getDate() - (6-i));
+    return (d.getMonth()+1)+'/'+(d.getDate());
+  });
+  // Generate descending trend toward current health
+  const endH = eq.health;
+  const startH = Math.min(98, endH + 20 + Math.floor(Math.random()*10));
+  const healthData = Array.from({length:7}, (_, i) => {
+    const v = Math.round(startH + (endH - startH) * (i/6) + (Math.random()-0.5)*3);
+    return Math.max(0, Math.min(100, v));
+  });
+  healthData[6] = endH;
+  if (trendChart) trendChart.destroy();
+  const ctx = document.getElementById('trendChart').getContext('2d');
+  trendChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [{
+        label:'健康度',
+        data: healthData,
+        borderColor: healthColor(endH),
+        backgroundColor: 'transparent',
+        borderWidth:2,
+        pointRadius:5,
+        pointBackgroundColor: healthColor(endH),
+        pointBorderColor: 'transparent',
+        tension:0.2,
+        fill:false
+      }]
+    },
+    options: {
+      responsive:true, maintainAspectRatio:false,
+      plugins: {
+        legend: { display:false },
+        tooltip: { callbacks: { label: ctx => '健康度: ' + ctx.raw } }
+      },
+      scales: {
+        x: { ticks: { color:'#8b92a8', font:{size:10} }, grid: { color:'rgba(255,255,255,0.04)' } },
+        y: { min:0, max:100, ticks: { color:'#8b92a8', font:{size:10} }, grid: { color:'rgba(255,255,255,0.04)' }, border:{dash:[3,3]} }
+      },
+      animation: { duration:300 }
+    }
+  });
+}
+ 
+function clearCharts() {
+  if (phaseChart) { phaseChart.destroy(); phaseChart = null; }
+  if (trendChart) { trendChart.destroy(); trendChart = null; }
+  document.getElementById('selected-eq-name').textContent = '選擇左側設備查看曲線';
+  document.getElementById('selected-trend-name').textContent = '選擇設備後顯示';
+  document.getElementById('r-val').textContent = '—';
+  document.getElementById('s-val').textContent = '—';
+  document.getElementById('t-val').textContent = '—';
+}
+
+const risks = {
+  mechanical: {
+    icon:'ti-settings-cog',
+    children:['皮帶斷裂','軸承異常']
+  },
+
+  electrical: {
+    icon:'ti-bolt',
+    children:['欠相','負載異常','三相不平衡']
+  },
+
+  insulation: {
+    icon:'ti-shield',
+    children:['局部放電']
+  }
+};
+
+const riskData = {
+  '欠相': {
+    count:12,
+    high:5,
+    events:18,
+    analysis:'偵測到多台設備存在相電流失衡現象，建議檢查接線與供電品質。',
+    eqs:[
+      {id:'A區-12',health:38},
+      {id:'C區-07',health:28},
+      {id:'B區-19',health:41}
+    ]
+  },
+
+  '軸承異常': {
+    count:8,
+    high:2,
+    events:11,
+    analysis:'軸承振動值異常升高，可能潤滑不足。',
+    eqs:[
+      {id:'C區-11',health:52},
+      {id:'D區-08',health:61}
+    ]
+  },
+
+  '局部放電': {
+    count:4,
+    high:1,
+    events:5,
+    analysis:'絕緣老化風險提升。',
+    eqs:[
+      {id:'E區-15',health:64}
+    ]
+  }
+};
+
+const riskTree = document.getElementById('risk-tree');
+
+Object.entries(risks).forEach(([key,val]) => {
+
+  const nameMap = {
+    mechanical:'機械層',
+    electrical:'電器層',
+    insulation:'絕緣層'
+  };
+
+  const div = document.createElement('div');
+
+  div.className = 'zone-group';
+
+  div.innerHTML = `
+    <div class="zone-group-header"
+      onclick="this.parentElement.classList.toggle('open')">
+
+      <i class="ti ${val.icon}"></i>
+      ${nameMap[key]}
+      <i class="ti ti-chevron-down zone-group-arrow"></i>
+    </div>
+
+    <div class="zone-children">
+      ${val.children.map(item => `
+        <div class="zone-child"
+          onclick="selectRisk('${item}', this)">
+
+          <span class="zone-child-dot"
+            style="background:#ef4444">
+          </span>
+
+          ${item}
+        </div>
+      `).join('')}
+    </div>
+  `;
+
+  riskTree.appendChild(div);
+});
+
+function selectRisk(name, el){
+
+  document.querySelectorAll('#risk-tree .zone-child')
+    .forEach(i => i.classList.remove('active'));
+
+  el.classList.add('active');
+
+  const data = riskData[name];
+
+  document.getElementById('risk-name')
+    .textContent = name;
+
+  document.getElementById('risk-count')
+    .textContent = data.count;
+
+  document.getElementById('risk-high')
+    .textContent = data.high;
+
+  document.getElementById('risk-events')
+    .textContent = data.events;
+
+  document.getElementById('risk-analysis')
+    .textContent = data.analysis;
+
+  const list = document.getElementById('risk-eq-list');
+
+  list.innerHTML = data.eqs.map(eq => `
+    <div class="eq-list-item">
+      <span class="eq-dot"
+        style="background:${healthColor(eq.health)}">
+      </span>
+
+      <span class="eq-name">${eq.id}</span>
+
+      <span class="eq-health"
+        style="color:${healthColor(eq.health)}">
+        ${eq.health}
+      </span>
+    </div>
+  `).join('');
+}
+
+selectRisk('欠相',
+document.querySelector('#risk-tree .zone-child'));
+ 
+// Init zone B on load
+renderZoneStats('B');
+renderEventList('B');
+renderEqList('B');
+</script>
+</body>
+</html>
+ 
